@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv --version)",
+      "Bash(uv venv *)",
+      "Bash(uv pip *)",
+      "Bash(.venv/Scripts/python -c \"import django; print\\(f'Django {django.VERSION}'\\); import rest_framework; print\\(f'DRF {rest_framework.VERSION}'\\); import celery; print\\(f'Celery {celery.__version__}'\\); import pandas; print\\(f'Pandas {pandas.__version__}'\\); import langchain; print\\(f'LangChain {langchain.__version__}'\\)\")",
+      "Bash(.venv/Scripts/python manage.py check)",
+      "Bash(.venv/Scripts/python manage.py makemigrations)",
+      "Bash(.venv/Scripts/python -c ' *)",
+      "Bash(.venv/Scripts/python manage.py migrate)",
+      "Bash(.venv/Scripts/python --version)",
+      "Bash(.venv/Scripts/python -c \"import django; print\\(f'Django {django.__version__}'\\)\")"
+    ]
+  }
+}
