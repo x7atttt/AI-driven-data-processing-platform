@@ -10,7 +10,7 @@ Django + Celery + LangChain 构建的数据处理平台。用户上传 CSV/Excel
 - **数据库**: PostgreSQL 15
 - **异步任务**: Celery 5.3 + Redis 7
 - **数据处理**: Pandas 2.2
-- **AI/NL2SQL**: LangChain + langchain-openai
+- **AI/NL2SQL**: LangChain + langchain-openai（验证+自动重试）
 - **前端**: Vue3 + Element Plus
 - **部署**: Docker + Docker Compose
 
@@ -31,7 +31,7 @@ data-platform/
 │   │   ├── tasks.py         # Celery异步任务 (指数退避重试+死信队列)
 │   │   └── consumers.py     # WebSocket进度推送
 │   ├── query/               # NL2SQL查询
-│   │   └── services/nl2sql.py # LangChain NL2SQL核心 (SQL安全审查)
+│   │   └── services/nl2sql.py # LangChain NL2SQL Agent (Schema发现+SQL验证+自动重试)
 │   └── export/              # 数据导出 (CSV/Excel)
 ├── frontend/                # Vue3前端
 ├── manage.py
@@ -59,8 +59,12 @@ data-platform/
 - 超过重试上限标记 `failed`（死信队列），Admin 后台可见
 - `--max-tasks-per-child=100`：防止内存泄漏
 
-### NL2SQL 安全
+### NL2SQL Agent 设计
+- 7步工作流：Schema发现 → Schema检查 → SQL生成 → SQL验证 → SQL执行 → 失败重试 → 结果格式化
 - SQL 安全审查三层防护：白名单(仅SELECT) → 危险关键字拦截 → 禁止多语句(分号注入)
+- Schema发现：获取表结构 + 3条样本行，帮助LLM理解数据格式
+- 自动重试：SQL执行失败后，将错误信息反馈LLM自动重写SQL，最多重试3次
+- 重试时再次安全审查，防止修复后的SQL包含危险操作
 - 所有查询自动加 LIMIT 1000
 - `temperature=0`：SQL 生成零温度保证稳定性
 
@@ -107,7 +111,9 @@ docker-compose exec django python manage.py createsuperuser
 - `DJANGO_DEBUG`: 调试模式 (生产环境 False)
 - `DATABASE_URL`: PostgreSQL 连接串
 - `REDIS_URL`: Redis 连接串 (`redis://localhost:6379/1`)
-- `OPENAI_API_KEY`: OpenAI API 密钥 (NL2SQL)
+- `OPENAI_API_KEY`: 智谱 API 密钥
+- `OPENAI_API_BASE`: 智谱 API 地址 (`https://open.bigmodel.cn/api/paas/v4`)
+- `LLM_MODEL`: 使用的模型名称 (默认 `GLM-4-Flash`)
 
 ## 检查清单
 
@@ -120,4 +126,6 @@ docker-compose exec django python manage.py createsuperuser
 - bulk_create 批量写入
 - SQL 安全审查：DROP/DELETE 拦截、分号注入拦截
 - 自动 LIMIT
+- Schema发现：表结构 + 样本行
+- SQL自动重试：LLM根据错误信息修复SQL，最多3次
 - 复合索引 EXPLAIN 确认
