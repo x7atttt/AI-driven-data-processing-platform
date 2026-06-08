@@ -30,3 +30,5 @@ Thumbs.db
 # Docker
 postgres_data/
 redis_data/
+
+项目二开发指导文档.md
