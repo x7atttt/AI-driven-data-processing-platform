@@ -48,14 +48,7 @@ class DatasetViewSet(viewsets.ModelViewSet):
         lock_service = UploadLockService()
         user_id = request.user.id
 
-        # 幂等检查：数据库唯一约束
-        if lock_service.is_duplicate(user_id, file_md5):
-            return Response(
-                {'error': '该文件已存在', 'file_md5': file_md5},
-                status=status.HTTP_409_CONFLICT,
-            )
-
-        # 获取分布式锁
+        # 先获取分布式锁，再查库（避免并发请求都通过 is_duplicate）
         if not lock_service.try_acquire_lock(user_id, file_md5):
             return Response(
                 {'error': '该文件正在处理中'},
@@ -63,23 +56,29 @@ class DatasetViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            dataset = Dataset.objects.create(
-                name=request.data.get('name') or file.name,
-                description=request.data.get('description', ''),
-                file=file,
-                file_name=file.name,
-                file_size=file.size,
-                file_md5=file_md5,
-                owner=request.user,
-            )
-        except IntegrityError:
-            lock_service.release_lock(user_id, file_md5)
-            return Response(
-                {'error': '该文件已存在'},
-                status=status.HTTP_409_CONFLICT,
-            )
+            # 在锁内查库，保证原子性
+            if lock_service.is_duplicate(user_id, file_md5):
+                return Response(
+                    {'error': '该文件已存在', 'file_md5': file_md5},
+                    status=status.HTTP_409_CONFLICT,
+                )
 
-        try:
+            try:
+                dataset = Dataset.objects.create(
+                    name=request.data.get('name') or file.name,
+                    description=request.data.get('description', ''),
+                    file=file,
+                    file_name=file.name,
+                    file_size=file.size,
+                    file_md5=file_md5,
+                    owner=request.user,
+                )
+            except IntegrityError:
+                return Response(
+                    {'error': '该文件已存在'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
             if file.size < SMALL_FILE_THRESHOLD:
                 from apps.datasets.services.parser import parse_file_sync
                 parse_file_sync(dataset)
@@ -91,11 +90,13 @@ class DatasetViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            lock_service.release_lock(user_id, file_md5)
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+        finally:
+            lock_service.release_lock(user_id, file_md5)
 
     def destroy(self, request, *args, **kwargs):
         dataset = self.get_object()

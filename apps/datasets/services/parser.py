@@ -16,12 +16,12 @@ def parse_file_sync(dataset: Dataset) -> None:
 
         df = clean_dataframe(df)
 
+        bulk_create_rows(dataset, df)
+
         dataset.row_count = len(df)
         dataset.column_count = len(df.columns)
         dataset.status = 'completed'
         dataset.save(update_fields=['row_count', 'column_count', 'status', 'updated_at'])
-
-        bulk_create_rows(dataset, df)
 
     except Exception:
         dataset.status = 'failed'

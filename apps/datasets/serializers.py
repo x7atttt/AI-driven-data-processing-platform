@@ -8,11 +8,11 @@ class DatasetSerializer(serializers.ModelSerializer):
         model = Dataset
         fields = [
             'id', 'name', 'description', 'file', 'file_name', 'file_size',
-            'file_md5', 'row_count', 'column_count', 'status',
+            'row_count', 'column_count', 'status',
             'owner', 'created_at', 'updated_at',
         ]
         read_only_fields = [
-            'id', 'file_name', 'file_size', 'file_md5',
+            'id', 'file_name', 'file_size',
             'row_count', 'column_count', 'status', 'owner',
             'created_at', 'updated_at',
         ]

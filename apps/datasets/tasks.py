@@ -18,6 +18,7 @@ def process_large_file(self, dataset_id: str):
     """
     from apps.datasets.models import Dataset, DataRow
     from apps.datasets.services.parser import clean_dataframe
+    import pandas as pd
 
     try:
         dataset = Dataset.objects.get(id=dataset_id)
@@ -29,9 +30,9 @@ def process_large_file(self, dataset_id: str):
         file_path = dataset.file.path
 
         if dataset.file_name.endswith('.csv'):
-            reader = __import__('pandas').read_csv(file_path, chunksize=chunk_size)
+            reader = pd.read_csv(file_path, chunksize=chunk_size)
         else:
-            df = __import__('pandas').read_excel(file_path)
+            df = pd.read_excel(file_path)
             reader = [df.iloc[i:i + chunk_size] for i in range(0, len(df), chunk_size)]
 
         for chunk_df in reader:
