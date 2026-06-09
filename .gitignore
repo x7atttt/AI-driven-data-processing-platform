@@ -35,3 +35,4 @@ redis_data/
 test.py
 .claude/settings.local.json
 项目二开发指导文档.md
+AGENTS.md
