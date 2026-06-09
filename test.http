@@ -1,0 +1,54 @@
+@baseUrl = http://localhost:8000
+
+### 1. 注册
+POST {{baseUrl}}/api/users/register/
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "password": "TestPass123!",
+    "email": "test@example.com"
+}
+
+### 2. 登录
+POST {{baseUrl}}/api/users/login/
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "password": "TestPass123!"
+}
+
+### 3. 查看个人信息
+GET {{baseUrl}}/api/users/profile/
+
+### 4. 登出
+POST {{baseUrl}}/api/users/logout/
+
+### 5. 用户列表（需要 admin）
+GET {{baseUrl}}/api/users/manage/
+
+### 6. 修改用户角色（需要 admin）
+PATCH {{baseUrl}}/api/users/manage/2/
+Content-Type: application/json
+
+{
+    "role": "analyst"
+}
+
+### 7. 禁用用户（需要 admin）
+DELETE {{baseUrl}}/api/users/manage/2/
+
+### 8. 自然语言查询（需要先上传数据集，替换 dataset_id）
+POST {{baseUrl}}/api/query/{{datasetId}}/
+Content-Type: application/json
+
+{
+    "question": "查看前10条数据"
+}
+
+### 9. 查询历史
+GET {{baseUrl}}/api/query/history/
+
+### 10. 查询历史（按数据集过滤）
+GET {{baseUrl}}/api/query/history/?dataset_id={{datasetId}}
