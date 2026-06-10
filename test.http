@@ -52,3 +52,9 @@ GET {{baseUrl}}/api/query/history/
 
 ### 10. 查询历史（按数据集过滤）
 GET {{baseUrl}}/api/query/history/?dataset_id={{datasetId}}
+
+### 11. 导出查询结果为CSV（替换 queryId）
+GET {{baseUrl}}/api/export/{{queryId}}/csv/
+
+### 12. 导出查询结果为Excel（替换 queryId）
+GET {{baseUrl}}/api/export/{{queryId}}/xlsx/
