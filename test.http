@@ -1,5 +1,11 @@
 @baseUrl = http://localhost:8000
 
+# ============================================================
+# 完整测试流程：注册→登录→上传→分析→查询→导出
+# 使用 REST Client（VS Code 插件）按顺序执行每个请求
+# Cookie 在同文件内自动共享，登录后的请求会自动携带 sessionid
+# ============================================================
+
 ### 1. 注册
 POST {{baseUrl}}/api/users/register/
 Content-Type: application/json
@@ -10,36 +16,47 @@ Content-Type: application/json
     "email": "test@example.com"
 }
 
-### 2. 登录
+### 2. 登录（登录后自动获得 sessionid，后续请求无需手动设置）
 POST {{baseUrl}}/api/users/login/
 Content-Type: application/json
 
 {
-    "username": "testuser",
-    "password": "TestPass123!"
+    "username": "admin",
+    "password": "123123"
 }
 
 ### 3. 查看个人信息
 GET {{baseUrl}}/api/users/profile/
 
-### 4. 登出
-POST {{baseUrl}}/api/users/logout/
+### 4. 上传数据集（小文件同步处理，直接返回 completed）
+# 执行后从响应中复制 id 填到下面 @datasetId
+POST {{baseUrl}}/api/datasets/
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
 
-### 5. 用户列表（需要 admin）
-GET {{baseUrl}}/api/users/manage/
+------WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="employee.csv"
+Content-Type: text/csv
 
-### 6. 修改用户角色（需要 admin）
-PATCH {{baseUrl}}/api/users/manage/2/
-Content-Type: application/json
+< ./test/employee.csv
+------WebKitFormBoundary
+Content-Disposition: form-data; name="name"
 
-{
-    "role": "analyst"
-}
+员工测试数据
+------WebKitFormBoundary--
 
-### 7. 禁用用户（需要 admin）
-DELETE {{baseUrl}}/api/users/manage/2/
+@datasetId = 8cbcc255-ace7-4908-b6c6-ce37d4c4cb34
 
-### 8. 自然语言查询（需要先上传数据集，替换 dataset_id）
+### 5. 查看数据集列表（确认 status=completed）
+GET {{baseUrl}}/api/datasets/
+
+### 6. 查看数据集详情
+GET {{baseUrl}}/api/datasets/{{datasetId}}/
+
+### 7. 数据分析统计（验证 Analyzer：列类型/min/max/avg/distinct）
+GET {{baseUrl}}/api/datasets/{{datasetId}}/analysis/
+
+### 8. 自然语言查询 - 基础查询
+# 执行后从响应中复制 sql 字段对应的查询 id（在 query history 中）
 POST {{baseUrl}}/api/query/{{datasetId}}/
 Content-Type: application/json
 
@@ -47,17 +64,56 @@ Content-Type: application/json
     "question": "查看前10条数据"
 }
 
-### 9. 查询历史
+### 9. 自然语言查询 - 聚合查询
+POST {{baseUrl}}/api/query/{{datasetId}}/
+Content-Type: application/json
+
+{
+    "question": "各部门的平均工资是多少"
+}
+
+### 10. 自然语言查询 - 条件查询
+POST {{baseUrl}}/api/query/{{datasetId}}/
+Content-Type: application/json
+
+{
+    "question": "北京在职员工有哪些"
+}
+
+### 11. 查询历史
 GET {{baseUrl}}/api/query/history/
 
-### 10. 查询历史（按数据集过滤）
+### 12. 查询历史（按数据集过滤）
 GET {{baseUrl}}/api/query/history/?dataset_id={{datasetId}}
 
-### 11. 导出查询结果为CSV（替换 queryId）
+@queryId = 124c6c40-7a03-45cd-810c-e67152e2da88
+
+### 13. 导出查询结果为CSV
 GET {{baseUrl}}/api/export/{{queryId}}/csv/
 
-### 12. 导出查询结果为Excel（替换 queryId）
+### 14. 导出查询结果为Excel
 GET {{baseUrl}}/api/export/{{queryId}}/xlsx/
 
-### 13. 数据集分析统计（替换 datasetId）
-GET {{baseUrl}}/api/datasets/{{datasetId}}/analysis/
+### 15. 删除数据集
+DELETE {{baseUrl}}/api/datasets/{{datasetId}}/
+
+### 16. 登出
+POST {{baseUrl}}/api/users/logout/
+
+# ============================================================
+# 以下为管理员操作（需要先注册 admin 用户并手动在数据库设 role）
+# ============================================================
+
+### 17. 用户列表（需要 admin）
+GET {{baseUrl}}/api/users/manage/
+
+### 18. 修改用户角色（需要 admin）
+PATCH {{baseUrl}}/api/users/manage/4/
+Content-Type: application/json
+
+{
+    "role": "analyst"
+}
+
+### 19. 禁用用户（需要 admin）
+DELETE {{baseUrl}}/api/users/manage/4/

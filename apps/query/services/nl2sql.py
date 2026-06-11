@@ -116,14 +116,21 @@ class NL2SQLService:
 
     # ===== SQL 生成 =====
 
+    @staticmethod
+    def _escape_braces(text: str) -> str:
+        """转义花括号，避免 ChatPromptTemplate 误解析 JSON"""
+        return text.replace('{', '{{').replace('}', '}}')
+
     def _generate_sql(self, question: str, schema_info: dict) -> str:
         prompt = ChatPromptTemplate.from_messages([
-            ('system', SQL_GENERATE_SYSTEM.safe_substitute(
+            ('system', self._escape_braces(SQL_GENERATE_SYSTEM.safe_substitute(
                 schema_summary=schema_info['schema_summary'],
                 few_shot_cases=schema_info['few_shot_cases'],
                 dataset_id=str(self.dataset.id),
-            )),
-            ('human', SQL_GENERATE_USER.safe_substitute(question=question)),
+            ))),
+            ('human', self._escape_braces(SQL_GENERATE_USER.safe_substitute(
+                question=question,
+            ))),
         ])
         chain = prompt | self.llm
         response = chain.invoke({})
@@ -132,14 +139,14 @@ class NL2SQLService:
     def _regenerate_sql(self, question: str, failed_sql: str,
                         error_msg: str, schema_info: dict) -> str:
         prompt = ChatPromptTemplate.from_messages([
-            ('system', SQL_FIX_SYSTEM.safe_substitute(
+            ('system', self._escape_braces(SQL_FIX_SYSTEM.safe_substitute(
                 schema_summary=schema_info['schema_summary'],
-            )),
-            ('human', SQL_FIX_USER.safe_substitute(
+            ))),
+            ('human', self._escape_braces(SQL_FIX_USER.safe_substitute(
                 question=question,
                 failed_sql=failed_sql,
                 error_msg=error_msg,
-            )),
+            ))),
         ])
         chain = prompt | self.llm
         response = chain.invoke({})

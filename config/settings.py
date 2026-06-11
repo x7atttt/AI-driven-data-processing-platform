@@ -39,7 +39,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',  # 开发环境注释掉，生产环境用 Token 认证替代
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -102,9 +102,14 @@ CHANNEL_LAYERS = {
 AUTH_USER_MODEL = 'users.User'
 
 # DRF
+if DEBUG:
+    _session_auth = 'config.dev_auth.CsrfExemptSessionAuthentication'
+else:
+    _session_auth = 'rest_framework.authentication.SessionAuthentication'
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
+        _session_auth,
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',

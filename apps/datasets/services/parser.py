@@ -1,5 +1,5 @@
 import pandas as pd
-from django.db import transaction
+from django.db import transaction#保证数据库原子性
 
 from apps.datasets.models import Dataset, DataRow
 
@@ -11,8 +11,8 @@ def parse_file_sync(dataset: Dataset) -> None:
     """同步解析文件（<10MB）"""
     try:
         dataset.status = 'processing'
-        dataset.save(update_fields=['status', 'updated_at'])
-
+        dataset.save(update_fields=['status', 'updated_at'])#保存指定字段
+        
         with transaction.atomic():
             df = _read_file(dataset.file.path, dataset.file_name)
             df = clean_dataframe(df)
@@ -64,3 +64,5 @@ def bulk_create_rows(dataset: Dataset, df: pd.DataFrame, batch_size: int = 1000)
             for j, rec in enumerate(records[i:i + batch_size])
         ]
         DataRow.objects.bulk_create(batch, batch_size=batch_size)
+
+
