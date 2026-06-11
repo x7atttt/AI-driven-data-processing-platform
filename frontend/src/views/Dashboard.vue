@@ -1,29 +1,19 @@
 <template>
   <div class="page-container">
     <div class="stat-cards">
-      <el-row :gutter="20">
-        <el-col :span="8">
-          <el-card shadow="hover" class="stat-card">
-            <div class="stat-number">{{ datasetCount }}</div>
-            <div class="stat-label">数据集总数</div>
-          </el-card>
-        </el-col>
-        <el-col :span="8">
-          <el-card shadow="hover" class="stat-card">
-            <div class="stat-number">{{ queryCount }}</div>
-            <div class="stat-label">查询记录数</div>
-          </el-card>
-        </el-col>
-        <el-col :span="8">
-          <el-card shadow="hover" class="stat-card">
-            <div class="stat-number">{{ store.user?.role === 'admin' ? '管理员' : store.user?.role === 'analyst' ? '分析师' : '只读用户' }}</div>
-            <div class="stat-label">当前角色</div>
-          </el-card>
-        </el-col>
-      </el-row>
+      <div
+        class="stat-card stagger-item"
+        v-for="(card, i) in statCards"
+        :key="i"
+        :style="{ '--stagger-index': i, '--card-accent': card.color }"
+      >
+        <el-icon class="decorative-icon"><component :is="card.icon" /></el-icon>
+        <div class="stat-number">{{ card.value }}</div>
+        <div class="stat-label">{{ card.label }}</div>
+      </div>
     </div>
 
-    <div class="quick-section">
+    <div class="page-section">
       <div class="section-header">
         <h3>最近数据集</h3>
         <el-button link type="primary" @click="$router.push('/datasets')">查看全部</el-button>
@@ -54,8 +44,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { DataAnalysis, FolderOpened, User } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/user'
 import { datasetApi } from '../api/dataset'
 import { queryApi } from '../api/query'
@@ -65,6 +56,17 @@ const store = useUserStore()
 const datasetCount = ref(0)
 const queryCount = ref(0)
 const recentDatasets = ref<any[]>([])
+
+const statCards = computed(() => [
+  { label: '数据集总数', value: datasetCount.value, icon: FolderOpened, color: '#3a8fd4' },
+  { label: '查询记录数', value: queryCount.value, icon: DataAnalysis, color: '#2ecc71' },
+  {
+    label: '当前角色',
+    value: store.user?.role === 'admin' ? '管理员' : store.user?.role === 'analyst' ? '分析师' : '只读用户',
+    icon: User,
+    color: '#e6a23c',
+  },
+])
 
 onMounted(async () => {
   try {
@@ -90,34 +92,71 @@ function formatTime(t: string) {
 
 <style scoped>
 .stat-cards {
-  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
 }
 
 .stat-card {
-  text-align: center;
+  position: relative;
+  padding: var(--space-lg);
+  background: var(--brand-surface);
+  border-radius: 12px;
+  box-shadow: var(--brand-shadow-sm);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--brand-shadow-md);
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--card-accent, var(--brand-accent));
+  border-radius: 0 2px 2px 0;
+}
+
+.decorative-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 48px;
+  opacity: 0.08;
+  color: var(--card-accent, var(--brand-accent));
 }
 
 .stat-number {
-  font-size: 32px;
-  font-weight: 600;
-  color: #409eff;
-  margin-bottom: 8px;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--card-accent, var(--brand-accent));
+  margin-bottom: 4px;
+  line-height: 1.2;
 }
 
 .stat-label {
-  font-size: 14px;
-  color: #909399;
+  font-size: 13px;
+  color: var(--brand-text-tertiary);
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-md);
 }
 
 .section-header h3 {
   font-size: 16px;
-  color: #303133;
+  font-weight: 600;
+  color: var(--brand-text-primary);
 }
 </style>

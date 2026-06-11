@@ -1,12 +1,15 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
+import './styles/variables.css'
 import 'element-plus/dist/index.css'
+import './styles/element-overrides.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
 import './styles/index.css'
+import './styles/transitions.css'
 
 const app = createApp(App)
 

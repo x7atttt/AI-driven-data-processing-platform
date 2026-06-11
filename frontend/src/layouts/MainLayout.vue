@@ -2,14 +2,12 @@
   <el-container class="main-layout">
     <el-aside :width="isCollapse ? '64px' : '200px'" class="sidebar">
       <div class="logo">
-        <span v-show="!isCollapse">AI 数据分析</span>
+        <span class="logo-icon">◈</span>
+        <span v-show="!isCollapse" class="logo-text">AI 数据分析</span>
       </div>
       <el-menu
         :default-active="activeMenu"
         :collapse="isCollapse"
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409eff"
         router
       >
         <el-menu-item index="/">
@@ -29,6 +27,7 @@
           <template #title>用户管理</template>
         </el-menu-item>
       </el-menu>
+      <div class="sidebar-gradient"></div>
     </el-aside>
 
     <el-container>
@@ -40,6 +39,7 @@
         <div class="user-area">
           <el-dropdown>
             <span class="user-name">
+              <span class="user-avatar">{{ avatarLetter }}</span>
               {{ store.user?.username }}
               <el-tag size="small" :type="roleTagType" class="role-tag">{{ roleLabel }}</el-tag>
               <el-icon><ArrowDown /></el-icon>
@@ -54,7 +54,11 @@
       </el-header>
 
       <el-main>
-        <router-view />
+        <router-view v-slot="{ Component, route: childRoute }">
+          <transition name="route" mode="out-in">
+            <component :is="Component" :key="childRoute.path" />
+          </transition>
+        </router-view>
       </el-main>
     </el-container>
   </el-container>
@@ -80,6 +84,8 @@ const activeMenu = computed(() => {
 })
 
 const isAdmin = computed(() => store.user?.role === 'admin')
+
+const avatarLetter = computed(() => (store.user?.username || 'U')[0].toUpperCase())
 
 const roleLabel = computed(() => {
   const map: Record<string, string> = { admin: '管理员', analyst: '分析师', viewer: '只读用户' }
@@ -108,38 +114,92 @@ async function handleLogout() {
 }
 
 .sidebar {
-  background-color: #304156;
-  transition: width 0.3s;
+  background-color: var(--brand-sidebar-bg);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
 .logo {
-  height: 60px;
+  height: var(--topbar-height);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  gap: 8px;
+  color: var(--brand-sidebar-text-active);
   font-size: 18px;
   font-weight: 600;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--brand-sidebar-border);
+  flex-shrink: 0;
+}
+
+.logo-icon {
+  font-size: 22px;
+  color: var(--brand-accent);
+}
+
+.logo-text {
+  white-space: nowrap;
+}
+
+.sidebar-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.15), transparent);
+  pointer-events: none;
 }
 
 .el-menu {
   border-right: none;
+  background-color: var(--brand-sidebar-bg) !important;
+  --el-menu-bg-color: var(--brand-sidebar-bg);
+  --el-menu-text-color: var(--brand-sidebar-text);
+  --el-menu-active-color: var(--brand-sidebar-text-active);
+  --el-menu-hover-bg-color: var(--brand-sidebar-hover);
+  flex: 1;
+}
+
+:deep(.el-menu-item) {
+  color: var(--brand-sidebar-text);
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+:deep(.el-menu-item:hover) {
+  background-color: var(--brand-sidebar-hover) !important;
+  color: var(--brand-sidebar-text-active);
+}
+
+:deep(.el-menu-item.is-active) {
+  background-color: var(--brand-sidebar-active) !important;
+  color: var(--brand-sidebar-text-active) !important;
+  border-left-color: var(--brand-accent);
 }
 
 .top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #e6e6e6;
-  background: #fff;
+  background: var(--brand-surface);
+  box-shadow: var(--brand-shadow-sm);
+  z-index: 1;
 }
 
 .collapse-btn {
   font-size: 20px;
   cursor: pointer;
-  color: #606266;
+  color: var(--brand-text-secondary);
+  transition: color 0.2s;
+}
+
+.collapse-btn:hover {
+  color: var(--brand-text-primary);
 }
 
 .user-area {
@@ -150,10 +210,28 @@ async function handleLogout() {
 .user-name {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
-  color: #606266;
+  color: var(--brand-text-secondary);
   font-size: 14px;
+  transition: color 0.2s;
+}
+
+.user-name:hover {
+  color: var(--brand-text-primary);
+}
+
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-accent), var(--el-color-primary-dark-2));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .role-tag {

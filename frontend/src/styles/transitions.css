@@ -1,0 +1,51 @@
+/* 路由切换过渡 */
+.route-enter-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.route-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.route-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.route-leave-to {
+  opacity: 0;
+}
+
+/* 淡入动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+/* 交错加载 */
+.stagger-item {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease forwards;
+  animation-delay: calc(var(--stagger-index, 0) * 60ms);
+}
+
+/* 通用 fade */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}

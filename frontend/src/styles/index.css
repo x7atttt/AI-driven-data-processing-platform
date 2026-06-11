@@ -4,24 +4,98 @@
   box-sizing: border-box;
 }
 
-html, body, #app {
-  height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+html {
+  scroll-behavior: smooth;
 }
 
+html, body, #app {
+  height: 100%;
+  font-family: var(--brand-font-family);
+  color: var(--brand-text-primary);
+}
+
+body {
+  background-color: var(--brand-background);
+}
+
+a {
+  color: var(--el-color-primary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: var(--el-color-primary-dark-2);
+}
+
+::selection {
+  background: var(--el-color-primary-light-7);
+  color: var(--brand-text-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--el-color-primary);
+  outline-offset: 2px;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* 布局工具 */
 .page-container {
-  padding: 20px;
+  padding: var(--space-lg);
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-lg);
 }
 
 .page-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #303133;
+  color: var(--brand-text-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.page-section {
+  background: var(--brand-surface);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  box-shadow: var(--brand-shadow-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.pagination-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-md);
+}
+
+/* 文本工具 */
+.text-secondary {
+  color: var(--brand-text-secondary);
+}
+
+.text-tertiary {
+  color: var(--brand-text-tertiary);
+}
+
+.text-mono {
+  font-family: var(--brand-font-mono);
 }

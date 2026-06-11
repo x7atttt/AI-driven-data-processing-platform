@@ -1,0 +1,76 @@
+:root {
+  --el-color-primary: #3a8fd4;
+  --el-color-primary-light-3: #6ab0e3;
+  --el-color-primary-light-5: #9dcfec;
+  --el-color-primary-light-7: #c0dff4;
+  --el-color-primary-light-8: #d4edf8;
+  --el-color-primary-light-9: #e8f4fc;
+  --el-color-primary-dark-2: #2e72ab;
+  --el-bg-color-page: #f0f2f5;
+  --el-border-radius-base: 6px;
+  --el-font-family: var(--brand-font-family);
+  --el-fill-color-light: #f7f8fa;
+}
+
+/* 卡片 */
+.el-card {
+  border-radius: 12px;
+  border: 1px solid var(--brand-border);
+  box-shadow: var(--brand-shadow-sm);
+}
+
+/* 按钮 */
+.el-button {
+  border-radius: 8px;
+}
+
+.el-button--primary {
+  background: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+}
+
+/* 输入框 */
+.el-input__wrapper {
+  border-radius: 8px;
+}
+
+/* 对话框 */
+.el-dialog {
+  border-radius: 12px;
+}
+
+/* Tabs */
+.el-tabs__active-bar {
+  height: 3px;
+  border-radius: 1.5px;
+}
+
+.el-tabs__item {
+  font-size: 15px;
+}
+
+.el-tabs__item.is-active {
+  font-weight: 600;
+}
+
+/* 表格 */
+.el-table {
+  --el-table-border-color: var(--brand-border);
+  --el-table-header-bg-color: #fafbfc;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--brand-text-secondary);
+}
+
+/* Tag */
+.el-tag {
+  border-radius: 6px;
+}
+
+/* 描述列表 */
+.el-descriptions__body {
+  background: transparent;
+}

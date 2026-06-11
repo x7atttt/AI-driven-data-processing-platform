@@ -12,35 +12,37 @@
       </el-select>
     </div>
 
-    <el-table :data="records" v-loading="loading" stripe>
-      <el-table-column prop="dataset_name" label="数据集" min-width="120" />
-      <el-table-column prop="question" label="问题" min-width="200" show-overflow-tooltip />
-      <el-table-column label="SQL" min-width="250">
-        <template #default="{ row }">
-          <el-tooltip :content="row.generated_sql" placement="top">
-            <span class="sql-preview">{{ row.generated_sql }}</span>
-          </el-tooltip>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="80">
-        <template #default="{ row }">
-          <el-tag :type="row.is_success ? 'success' : 'danger'" size="small">
-            {{ row.is_success ? '成功' : '失败' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="耗时" width="90">
-        <template #default="{ row }">{{ row.execution_time_ms ? row.execution_time_ms + 'ms' : '-' }}</template>
-      </el-table-column>
-      <el-table-column label="时间" width="170">
-        <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="80">
-        <template #default="{ row }">
-          <el-button link type="primary" @click="goDetail(row.dataset)">查看</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="page-section">
+      <el-table :data="records" v-loading="loading" stripe>
+        <el-table-column prop="dataset_name" label="数据集" min-width="120" />
+        <el-table-column prop="question" label="问题" min-width="200" show-overflow-tooltip />
+        <el-table-column label="SQL" min-width="250">
+          <template #default="{ row }">
+            <el-tooltip :content="row.generated_sql" placement="top">
+              <span class="sql-preview">{{ row.generated_sql }}</span>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="80">
+          <template #default="{ row }">
+            <el-tag :type="row.is_success ? 'success' : 'danger'" size="small">
+              {{ row.is_success ? '成功' : '失败' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="耗时" width="90">
+          <template #default="{ row }">{{ row.execution_time_ms ? row.execution_time_ms + 'ms' : '-' }}</template>
+        </el-table-column>
+        <el-table-column label="时间" width="170">
+          <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="80">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="goDetail(row.dataset)">查看</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <div class="pagination-row">
       <el-pagination
@@ -109,14 +111,11 @@ function formatTime(t: string) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: 'Courier New', monospace;
+  font-family: var(--brand-font-mono);
   font-size: 12px;
-  color: #606266;
-}
-
-.pagination-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 16px;
+  color: var(--brand-text-secondary);
+  background: var(--brand-code-bg);
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 </style>

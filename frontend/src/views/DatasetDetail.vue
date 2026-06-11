@@ -5,10 +5,10 @@
         <el-button :icon="ArrowLeft" @click="$router.push('/datasets')">返回</el-button>
         <h2>{{ dataset?.name || '数据集详情' }}</h2>
       </div>
-      <el-tag v-if="dataset" :type="statusType(dataset.status)">{{ statusLabel(dataset.status) }}</el-tag>
+      <el-tag v-if="dataset" :type="statusType(dataset.status)" size="large">{{ statusLabel(dataset.status) }}</el-tag>
     </div>
 
-    <div v-if="dataset" class="info-row">
+    <div v-if="dataset" class="info-row page-section">
       <el-descriptions :column="4" border size="small">
         <el-descriptions-item label="文件名">{{ dataset.file_name }}</el-descriptions-item>
         <el-descriptions-item label="行数">{{ dataset.row_count }}</el-descriptions-item>
@@ -17,7 +17,7 @@
       </el-descriptions>
     </div>
 
-    <el-tabs v-model="activeTab" v-loading="loading">
+    <el-tabs v-model="activeTab" v-loading="loading" class="detail-tabs">
       <el-tab-pane label="数据分析" name="analysis">
         <div v-if="analysis" class="analysis-section">
           <h4>列统计信息</h4>
@@ -61,7 +61,7 @@
 
       <el-tab-pane label="自然语言查询" name="query">
         <div class="query-workspace">
-          <div class="query-input-row">
+          <div class="query-input-card page-section">
             <el-input
               v-model="question"
               placeholder="用自然语言查询数据..."
@@ -78,33 +78,43 @@
           <div v-if="queryResult" class="result-section">
             <div v-if="queryResult.success" class="result-success">
               <div class="result-header">
-                <span>查询到 {{ queryResult.row_count }} 条数据，耗时 {{ queryResult.execution_time_ms }}ms</span>
+                <span>查询到 <strong>{{ queryResult.row_count }}</strong> 条数据，耗时 {{ queryResult.execution_time_ms }}ms</span>
               </div>
 
-              <el-table
-                :data="queryResult.data"
-                stripe border size="small"
-                max-height="400" class="result-table"
-              >
-                <el-table-column
-                  v-for="col in resultColumns"
-                  :key="col"
-                  :prop="col"
-                  :label="col"
-                  min-width="120"
-                  show-overflow-tooltip
-                />
-              </el-table>
+              <div class="result-table-wrapper">
+                <el-table
+                  :data="queryResult.data"
+                  stripe border size="small"
+                  max-height="400"
+                >
+                  <el-table-column
+                    v-for="col in resultColumns"
+                    :key="col"
+                    :prop="col"
+                    :label="col"
+                    min-width="120"
+                    show-overflow-tooltip
+                  />
+                </el-table>
+              </div>
 
-              <el-collapse class="sql-collapse">
-                <el-collapse-item title="查看生成的 SQL">
-                  <code class="sql-code">{{ queryResult.sql }}</code>
-                </el-collapse-item>
-              </el-collapse>
+              <div class="sql-block">
+                <div class="sql-block-header">
+                  <span>SQL</span>
+                  <el-button text size="small" @click="copySql">
+                    <el-icon><DocumentCopy /></el-icon> 复制
+                  </el-button>
+                </div>
+                <pre>{{ queryResult.sql }}</pre>
+              </div>
 
               <div v-if="canExport" class="export-row">
-                <el-button :icon="Download" @click="handleExport('csv')">导出 CSV</el-button>
-                <el-button :icon="Download" @click="handleExport('xlsx')">导出 Excel</el-button>
+                <el-button @click="handleExport('csv')">
+                  <el-icon><Download /></el-icon> 导出 CSV
+                </el-button>
+                <el-button @click="handleExport('xlsx')">
+                  <el-icon><Download /></el-icon> 导出 Excel
+                </el-button>
               </div>
             </div>
 
@@ -125,7 +135,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Search, ArrowLeft, Download } from '@element-plus/icons-vue'
+import { Search, ArrowLeft, Download, DocumentCopy } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/user'
 import { datasetApi } from '../api/dataset'
 import { queryApi } from '../api/query'
@@ -195,6 +205,12 @@ async function handleQuery() {
   }
 }
 
+function copySql() {
+  if (!queryResult.value?.sql) return
+  navigator.clipboard.writeText(queryResult.value.sql)
+  ElMessage.success('SQL 已复制')
+}
+
 async function handleExport(format: 'csv' | 'xlsx') {
   if (!currentQueryId.value) {
     ElMessage.error('未找到查询记录，无法导出')
@@ -237,21 +253,28 @@ function formatSize(bytes: number) {
 }
 
 .info-row {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.detail-tabs {
+  background: transparent;
 }
 
 .analysis-section h4 {
   margin-bottom: 12px;
-  color: #303133;
+  color: var(--brand-text-primary);
+  font-weight: 600;
 }
 
 .query-workspace {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-lg);
 }
 
-.query-input-row {
+.query-input-card {
+  padding: var(--space-lg);
   max-width: 800px;
 }
 
@@ -260,26 +283,50 @@ function formatSize(bytes: number) {
 }
 
 .result-header {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-md);
   font-size: 14px;
-  color: #606266;
+  color: var(--brand-text-secondary);
 }
 
-.result-table {
-  margin-bottom: 12px;
+.result-table-wrapper {
+  box-shadow: var(--brand-shadow-sm);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: var(--space-md);
 }
 
-.sql-collapse {
-  margin-bottom: 12px;
+.sql-block {
+  background: #1e293b;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: var(--space-md);
 }
 
-.sql-code {
-  display: block;
-  padding: 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
+.sql-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.sql-block-header :deep(.el-button) {
+  color: #94a3b8;
+}
+
+.sql-block-header :deep(.el-button:hover) {
+  color: #e2e8f0;
+}
+
+.sql-block pre {
+  margin: 0;
+  padding: 16px;
+  color: #e2e8f0;
+  font-family: var(--brand-font-mono);
   font-size: 13px;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-all;
 }
@@ -287,5 +334,7 @@ function formatSize(bytes: number) {
 .export-row {
   display: flex;
   gap: 12px;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--brand-border);
 }
 </style>

@@ -12,41 +12,43 @@
       </el-button>
     </div>
 
-    <el-table :data="datasets" v-loading="loading" stripe>
-      <el-table-column prop="name" label="名称" min-width="150" />
-      <el-table-column prop="file_name" label="文件名" min-width="150" />
-      <el-table-column label="行数" width="90">
-        <template #default="{ row }">{{ row.row_count || '-' }}</template>
-      </el-table-column>
-      <el-table-column label="列数" width="90">
-        <template #default="{ row }">{{ row.column_count || '-' }}</template>
-      </el-table-column>
-      <el-table-column label="状态" width="110">
-        <template #default="{ row }">
-          <el-tag :type="statusType(row.status)" size="small">
-            {{ statusLabel(row.status) }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="大小" width="100">
-        <template #default="{ row }">{{ formatSize(row.file_size) }}</template>
-      </el-table-column>
-      <el-table-column label="创建时间" width="170">
-        <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="160" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" @click="goDetail(row.id)">查看</el-button>
-          <el-button
-            v-if="canUpload"
-            link type="danger"
-            @click="handleDelete(row)"
-          >
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="page-section">
+      <el-table :data="datasets" v-loading="loading" stripe>
+        <el-table-column prop="name" label="名称" min-width="150" />
+        <el-table-column prop="file_name" label="文件名" min-width="150" />
+        <el-table-column label="行数" width="90">
+          <template #default="{ row }">{{ row.row_count || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="列数" width="90">
+          <template #default="{ row }">{{ row.column_count || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="状态" width="110">
+          <template #default="{ row }">
+            <el-tag :type="statusType(row.status)" size="small">
+              {{ statusLabel(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="大小" width="100">
+          <template #default="{ row }">{{ formatSize(row.file_size) }}</template>
+        </el-table-column>
+        <el-table-column label="创建时间" width="170">
+          <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="160" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="goDetail(row.id)">查看</el-button>
+            <el-button
+              v-if="canUpload"
+              link type="danger"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <div class="pagination-row">
       <el-pagination
@@ -225,11 +227,3 @@ function formatTime(t: string) {
   return t.replace('T', ' ').slice(0, 19)
 }
 </script>
-
-<style scoped>
-.pagination-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 16px;
-}
-</style>
