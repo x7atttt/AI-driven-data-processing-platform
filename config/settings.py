@@ -102,10 +102,7 @@ CHANNEL_LAYERS = {
 AUTH_USER_MODEL = 'users.User'
 
 # DRF
-if DEBUG:
-    _session_auth = 'config.dev_auth.CsrfExemptSessionAuthentication'
-else:
-    _session_auth = 'rest_framework.authentication.SessionAuthentication'
+_session_auth = 'config.dev_auth.CsrfExemptSessionAuthentication'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
