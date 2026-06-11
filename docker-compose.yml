@@ -1,3 +1,4 @@
+# 部署命令: docker-compose --env-file .env.production up -d --build
 services:
   django:
     build: .
