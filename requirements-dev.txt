@@ -1,0 +1,4 @@
+# 开发/测试依赖（不进生产镜像）
+# 安装：pip install -r requirements-dev.txt
+
+psutil>=5.9,<7.0       # 采样 worker 进程内存峰值
