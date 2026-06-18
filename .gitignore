@@ -24,6 +24,7 @@ media/
 # Node
 node_modules/
 frontend/dist/
+frontend/.vite/
 
 # OS
 .DS_Store
