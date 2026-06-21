@@ -1,4 +1,4 @@
-# AI-Driven Data Processing Platform
+# AI 驱动的数据处理平台
 
 Django + Celery + LangChain 构建的数据处理平台。用户上传 CSV/Excel，用自然语言查数据，AI 自动生成 SQL 并执行返回结果。
 
@@ -8,7 +8,7 @@ Django + Celery + LangChain 构建的数据处理平台。用户上传 CSV/Excel
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-## Features
+## 功能特性
 
 - **数据集管理**：上传 CSV/Excel 文件，异步解析入库，WebSocket 实时推送处理进度
 - **自然语言查询**：AI 自动将中文问题转为 SQL 并执行（NL2SQL）
@@ -20,36 +20,36 @@ Django + Celery + LangChain 构建的数据处理平台。用户上传 CSV/Excel
 - **WebSocket 实时进度**：替代 HTTP 轮询，Celery 任务每处理 1 万行推送一次进度
 - **NL2SQL 安全**：三层 SQL 安全校验（白名单 → 关键字拦截 → 注入拦截）
 
-## Tech Stack
+## 技术栈
 
-| Layer | Technologies |
-|-------|-------------|
-| Backend | Python 3.12, Django 5.1, DRF 3.14, Celery 5.3, Channels |
-| Database | PostgreSQL 15, Redis 7 |
-| AI/LLM | LangChain, 智谱 GLM (OpenAI-compatible API) |
-| Frontend | Vue 3.4, TypeScript, Element Plus 2.9, Pinia, Vue Router 4, Vite |
-| Deployment | Docker Compose, Nginx, Daphne |
+| 层级 | 技术选型 |
+|------|----------|
+| 后端 | Python 3.12, Django 5.1, DRF 3.14, Celery 5.3, Channels |
+| 数据库 | PostgreSQL 15, Redis 7 |
+| AI/LLM | LangChain, 智谱 GLM (OpenAI 兼容 API) |
+| 前端 | Vue 3.4, TypeScript, Element Plus 2.9, Pinia, Vue Router 4, Vite |
+| 部署 | Docker Compose, Nginx, Daphne |
 
-## Quick Start
+## 快速开始
 
-### Docker Compose (Recommended)
+### Docker Compose 部署（推荐）
 
 ```bash
-# 1. Clone
+# 1. 克隆仓库
 git clone https://github.com/x7atttt/AI-driven-data-processing-platform.git
 cd AI-driven-data-processing-platform
 
-# 2. Create .env.production and fill in real values
+# 2. 创建 .env.production 并填入真实值
 cp .env.production .env.production
-# Edit DJANGO_SECRET_KEY, DB_PASSWORD, OPENAI_API_KEY, ALLOWED_HOSTS, etc.
+# 编辑 DJANGO_SECRET_KEY、DB_PASSWORD、OPENAI_API_KEY、ALLOWED_HOSTS 等
 
-# 3. Build and start
+# 3. 构建并启动
 docker compose --env-file .env.production up -d --build
 
-# 4. Create admin user
+# 4. 创建管理员账号
 docker compose exec -it django python manage.py createsuperuser
 
-# 5. Set admin role
+# 5. 设置管理员角色
 docker compose exec django python manage.py shell -c "
 from apps.users.models import User
 u = User.objects.first()
@@ -57,37 +57,37 @@ u.role = 'admin'
 u.save()
 "
 
-# 6. Visit http://your-server-ip
+# 6. 访问 http://你的服务器IP
 ```
 
-### Local Development
+### 本地开发
 
-> ⚠️ Backend **must** use `daphne` (not `runserver`), because `runserver` is WSGI and does not support WebSocket.
+> ⚠️ 后端**必须**用 `daphne` 启动（不能用 `runserver`），因为 `runserver` 是 WSGI，不支持 WebSocket。
 
 ```bash
-# Backend (HTTP + WebSocket, must use daphne)
+# 后端（HTTP + WebSocket，必须用 daphne）
 pip install -r requirements.txt
 python manage.py migrate
 daphne -b 0.0.0.0 -p 8000 config.asgi:application
 
-# Celery (Windows must use --pool=solo, prefork not supported)
+# Celery（Windows 必须用 --pool=solo，prefork 不支持）
 celery -A config worker -l info --pool=solo
 celery -A config beat -l info
 
-# Frontend
+# 前端
 cd frontend
 npm install --legacy-peer-deps
 npm run dev    # http://localhost:5173
 ```
 
-> ⚠️ **All 3 terminals must be running**: daphne (HTTP + WS) + celery worker (async tasks) + vite dev (frontend). Missing any one will cause features to break.
+> ⚠️ **必须同时启动 3 个终端**：daphne（HTTP + WS）+ celery worker（异步任务）+ vite dev（前端）。少起任何一个都会导致功能异常。
 
-## Architecture
+## 架构图
 
 ```
                     ┌─────────────┐
                     │   Nginx     │ :80
-                    │  (frontend) │
+                    │  (前端)      │
                     └──────┬──────┘
                            │
               ┌────────────┼────────────┐
@@ -105,52 +105,52 @@ npm run dev    # http://localhost:5173
                                      └─────────┘
 ```
 
-## Project Structure
+## 项目结构
 
 ```
-├── config/                  # Django settings, URLs, Celery, ASGI
+├── config/                  # Django 配置、URL、Celery、ASGI
 ├── apps/
-│   ├── users/               # User model, RBAC, auth API
-│   ├── datasets/            # Upload, parser, Celery tasks, analyzer
-│   ├── query/               # NL2SQL service, query API
-│   └── export/              # CSV/Excel export
+│   ├── users/               # 用户模型、RBAC、认证 API
+│   ├── datasets/            # 上传、解析、Celery 任务、分析器
+│   ├── query/               # NL2SQL 服务、查询 API
+│   └── export/              # CSV/Excel 导出
 ├── frontend/                # Vue 3 + TypeScript + Element Plus
-│   ├── src/views/           # 7 pages
-│   ├── src/styles/          # CSS theme system
-│   ├── src/components/      # Shared components
-│   └── Dockerfile           # Multi-stage build (Node → Nginx)
+│   ├── src/views/           # 7 个页面
+│   ├── src/styles/          # CSS 主题系统
+│   ├── src/components/      # 公共组件
+│   └── Dockerfile           # 多阶段构建（Node → Nginx）
 ├── nginx/
-│   └── nginx.conf           # Reverse proxy config
-├── docker-compose.yml       # 6 services
-├── Dockerfile               # Backend image
-└── requirements.txt         # Python dependencies
+│   └── nginx.conf           # 反向代理配置
+├── docker-compose.yml       # 6 个服务
+├── Dockerfile               # 后端镜像
+└── requirements.txt         # Python 依赖
 ```
 
-## API Overview
+## API 接口概览
 
-| Endpoint | Method | Description | Auth |
-|----------|--------|-------------|------|
-| `/api/users/register/` | POST | Register | Public |
-| `/api/users/login/` | POST | Login | Public |
-| `/api/users/logout/` | POST | Logout | Required |
-| `/api/users/profile/` | GET | Current user | Required |
-| `/api/users/manage/` | GET | User list | Admin |
-| `/api/users/manage/{id}/` | PATCH/DELETE | Update role / Disable | Admin |
-| `/api/datasets/` | GET/POST | List / Upload | Upload: Analyst+ |
-| `/api/datasets/{id}/` | GET/DELETE | Detail / Delete | Delete: Analyst+ |
-| `/api/datasets/{id}/analysis/` | GET | Column statistics | Required |
-| `/api/query/{dataset_id}/` | POST | Natural language query | Required |
-| `/api/query/history/` | GET | Query history | Required |
-| `/api/export/{query_id}/csv/` | GET | Export CSV | Analyst+ |
-| `/api/export/{query_id}/xlsx/` | GET | Export Excel | Analyst+ |
+| 接口 | 方法 | 描述 | 权限 |
+|------|------|------|------|
+| `/api/users/register/` | POST | 注册 | 公开 |
+| `/api/users/login/` | POST | 登录 | 公开 |
+| `/api/users/logout/` | POST | 注销 | 需登录 |
+| `/api/users/profile/` | GET | 当前用户信息 | 需登录 |
+| `/api/users/manage/` | GET | 用户列表 | 管理员 |
+| `/api/users/manage/{id}/` | PATCH/DELETE | 改角色 / 禁用 | 管理员 |
+| `/api/datasets/` | GET/POST | 列表 / 上传 | 上传：Analyst+ |
+| `/api/datasets/{id}/` | GET/DELETE | 详情 / 删除 | 删除：Analyst+ |
+| `/api/datasets/{id}/analysis/` | GET | 列统计 | 需登录 |
+| `/api/query/{dataset_id}/` | POST | 自然语言查询 | 需登录 |
+| `/api/query/history/` | GET | 查询历史 | 需登录 |
+| `/api/export/{query_id}/csv/` | GET | 导出 CSV | Analyst+ |
+| `/api/export/{query_id}/xlsx/` | GET | 导出 Excel | Analyst+ |
 
-### WebSocket Endpoints
+### WebSocket 接口
 
-| Endpoint | Description | Auth |
-|----------|-------------|------|
-| `/ws/datasets/{dataset_id}/progress/` | Real-time dataset processing progress push | Session (Cookie) |
+| 接口 | 描述 | 认证 |
+|------|------|------|
+| `/ws/datasets/{dataset_id}/progress/` | 数据集处理进度实时推送 | Session（Cookie） |
 
-**Message format** (server → client, JSON):
+**消息格式**（服务端 → 客户端，JSON）：
 
 ```json
 {
@@ -160,40 +160,40 @@ npm run dev    # http://localhost:5173
 }
 ```
 
-`status`: `processing` (in progress) | `completed` | `failed` (terminal states, client closes connection)
+`status` 取值：`processing`（处理中）| `completed`（完成）| `failed`（失败，终态后客户端主动关闭连接）
 
-## RBAC
+## RBAC 权限矩阵
 
-| Feature | Admin | Analyst | Viewer |
-|---------|-------|---------|--------|
-| Upload datasets | ✅ | ✅ | ❌ |
-| Delete datasets | ✅ | ✅ | ❌ |
-| Query (NL2SQL) | ✅ | ✅ | ✅ |
-| Export data | ✅ | ✅ | ❌ |
-| Manage users | ✅ | ❌ | ❌ |
+| 功能 | Admin | Analyst | Viewer |
+|------|:-----:|:-------:|:------:|
+| 上传数据集 | ✅ | ✅ | ❌ |
+| 删除数据集 | ✅ | ✅ | ❌ |
+| 查询（NL2SQL） | ✅ | ✅ | ✅ |
+| 导出数据 | ✅ | ✅ | ❌ |
+| 管理用户 | ✅ | ❌ | ❌ |
 
-All querysets are filtered by `owner=request.user` for row-level isolation.
+所有查询结果通过 `owner=request.user` 过滤，实现行级数据隔离。
 
-## Key Design Decisions
+## 关键设计决策
 
-- **Idempotent Upload**: Redis SETNX lock + DB `(owner, file_md5)` unique constraint
-- **Celery Reliability**: `acks_late=True`, exponential backoff retry (max 5), dead letter on failure
-- **NL2SQL Pipeline**: 7-step workflow with 3-layer SQL security, auto-retry on failure (max 3), automatic LIMIT 1000
-- **Frontend Theme**: CSS custom properties + Element Plus variable overrides, zero additional dependencies
+- **幂等上传**：Redis SETNX 锁 + 数据库 `(owner, file_md5)` 唯一约束
+- **Celery 可靠性**：`acks_late=True`、指数退避重试（最多 5 次）、失败入死信队列
+- **NL2SQL 流水线**：7 步工作流 + 三层 SQL 安全校验，失败自动重试（最多 3 次），自动加 LIMIT 1000
+- **前端主题**：CSS 自定义属性 + Element Plus 变量覆盖，零额外依赖
 
-## Environment Variables
+## 环境变量
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DJANGO_SECRET_KEY` | Yes | Random secret key |
-| `DJANGO_DEBUG` | Yes | `True` / `False` |
-| `DB_HOST` | Yes | `db` (Docker) / `localhost` (local) |
-| `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Yes | PostgreSQL credentials |
-| `REDIS_URL` | Yes | `redis://redis:6379/1` (Docker) |
-| `OPENAI_API_KEY` | Yes | 智谱 API key |
-| `OPENAI_API_BASE` | Yes | `https://open.bigmodel.cn/api/paas/v4` |
-| `LLM_MODEL` | No | Default: `GLM-4-Flash` |
-| `ALLOWED_HOSTS` | Yes | Comma-separated host list |
+| 变量 | 必填 | 说明 |
+|------|:----:|------|
+| `DJANGO_SECRET_KEY` | 是 | 随机密钥 |
+| `DJANGO_DEBUG` | 是 | `True` / `False` |
+| `DB_HOST` | 是 | `db`（Docker）/ `localhost`（本地） |
+| `DB_NAME`, `DB_USER`, `DB_PASSWORD` | 是 | PostgreSQL 凭证 |
+| `REDIS_URL` | 是 | `redis://redis:6379/1`（Docker） |
+| `OPENAI_API_KEY` | 是 | 智谱 API key |
+| `OPENAI_API_BASE` | 是 | `https://open.bigmodel.cn/api/paas/v4` |
+| `LLM_MODEL` | 否 | 默认：`GLM-4-Flash` |
+| `ALLOWED_HOSTS` | 是 | 逗号分隔的域名列表 |
 
 ## License
 
