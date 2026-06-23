@@ -1,6 +1,9 @@
 import re
 import time
 import logging
+import json
+from decimal import Decimal
+from datetime import datetime, date
 from string import Template
 
 from langchain_openai import ChatOpenAI
@@ -11,6 +14,28 @@ from django.db import connection
 from apps.query.models import QueryHistory
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_for_json(obj):
+    """递归把数据库返回的非 JSON 原生类型转成可序列化的类型。
+
+    PostgreSQL cursor 返回的行里常含 Decimal（numeric 列）、
+    datetime/date（时间列）、UUID 等，这些标准 json.dumps 不认识，
+    直接塞进 JSONField 会抛 TypeError。统一在这里净化，让结果既能
+    存 result_preview，也能直接走 DRF Response。
+    """
+    if isinstance(obj, Decimal):
+        # Decimal → float（数值语义保留，舍弃精确精度，前端展示足够）
+        return float(obj)
+    if isinstance(obj, (datetime, date)):
+        # datetime/date → ISO 格式字符串（前端可解析）
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize_for_json(v) for v in obj]
+    return obj
+
 
 # ===== Prompt 模板化管理 =====
 
@@ -159,7 +184,8 @@ class NL2SQLService:
             cursor.execute(sql)
             columns = [col[0] for col in cursor.description]
             rows = cursor.fetchall()
-        return [dict(zip(columns, row)) for row in rows]
+        # 净化 Decimal/datetime 等非 JSON 类型，保证存 JSONField 和 HTTP Response 都安全
+        return [_sanitize_for_json(dict(zip(columns, row))) for row in rows]
 
     # ===== 主流程 =====
 

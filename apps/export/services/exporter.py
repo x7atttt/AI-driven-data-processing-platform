@@ -20,7 +20,9 @@ class ExportService:
             cursor.execute(sql)
             columns = [col[0] for col in cursor.description]
             rows = cursor.fetchall()
-        return [dict(zip(columns, row)) for row in rows]
+        # 复用 nl2sql 的净化逻辑，保证 Decimal/datetime 可被 JSON 序列化
+        from apps.query.services.nl2sql import _sanitize_for_json
+        return [_sanitize_for_json(dict(zip(columns, row))) for row in rows]
 
     @staticmethod
     def export_csv(data: list) -> bytes:
