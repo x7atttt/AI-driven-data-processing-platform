@@ -18,15 +18,23 @@ class NL2SQLQueryView(APIView):
         serializer.is_valid(raise_exception=True)
         question = serializer.validated_data['question']
 
-        try:
-            dataset = Dataset.objects.get(
-                id=dataset_id,
-                owner=request.user,
-            )
-            
-        except Dataset.DoesNotExist:
+        # 数据集可见性：与 DatasetViewSet.get_queryset 分层一致
+        # admin 任意、analyst 只查自己的、viewer 只查被分享的
+        user = request.user
+        if user.is_admin:
+            dataset = Dataset.objects.filter(id=dataset_id).first()
+        elif user.is_analyst:
+            dataset = Dataset.objects.filter(id=dataset_id, owner=user).first()
+        else:  # viewer
+            from django.db.models import Q
+            dataset = Dataset.objects.filter(
+                Q(owner=user) | Q(shares__shared_to=user)
+            ).filter(id=dataset_id).distinct().first()
+
+        if dataset is None:
             return Response(
-                {'error': '数据集不存在'}, status=status.HTTP_404_NOT_FOUND
+                {'error': '数据集不存在或无权访问'},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         if dataset.status != 'completed':

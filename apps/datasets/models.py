@@ -68,3 +68,43 @@ class DataRow(models.Model):
         ]
 
 
+class DatasetShare(models.Model):
+    """数据集分享记录：analyst 把数据集授权给指定 viewer。
+
+    对齐 Superset/Metabase 的 Viewer 授权机制——viewer 默认看不到任何
+    数据集，必须被 analyst 显式分享才能查询。
+    """
+    PERMISSION_CHOICES = [
+        ('query', '可查询'),
+    ]  # 当前只有 query 一种，预留扩展（未来可加 read-only 等）
+
+    dataset = models.ForeignKey(
+        Dataset, on_delete=models.CASCADE, related_name='shares',
+        verbose_name='数据集',
+    )
+    shared_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='shared_datasets', verbose_name='被分享用户',
+    )
+    shared_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='shared_by_me', verbose_name='分享人',
+    )
+    permission = models.CharField(
+        max_length=10, choices=PERMISSION_CHOICES, default='query',
+        verbose_name='权限',
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='分享时间')
+
+    class Meta:
+        db_table = 'dataset_shares'
+        verbose_name = '数据集分享'
+        verbose_name_plural = verbose_name
+        constraints = [
+            models.UniqueConstraint(
+                fields=['dataset', 'shared_to'],
+                name='uq_dataset_share',  # 同一数据集对同一用户只分享一次
+            )
+        ]
+
+
