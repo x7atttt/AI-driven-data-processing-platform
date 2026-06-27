@@ -76,7 +76,7 @@ def _classify_columns(df: pd.DataFrame) -> dict:
 
 
 def get_column_stats(dataset: Dataset) -> dict:
-    """每列统计信息"""
+    """每列统计信息,给前端表格渲染"""
     if dataset.status != 'completed':
         return {'columns': [], 'total_rows': 0, 'sampled': False}
 

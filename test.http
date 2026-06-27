@@ -11,8 +11,8 @@ POST {{baseUrl}}/api/users/register/
 Content-Type: application/json
 
 {
-    "username": "testuser",
-    "password": "TestPass123!",
+    "username": "test2",
+    "password": "123123",
     "email": "test@example.com"
 }
 

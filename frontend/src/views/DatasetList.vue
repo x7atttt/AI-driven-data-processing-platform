@@ -63,32 +63,39 @@
       />
     </div>
 
-    <el-dialog v-model="showUploadDialog" title="上传数据集" width="500px" :close-on-click-modal="false">
-      <el-form :model="uploadForm" label-width="80px">
+    <el-dialog v-model="showUploadDialog" title="上传数据集" width="540px" :close-on-click-modal="false">
+      <el-form label-width="80px">
         <el-form-item label="文件" required>
           <el-upload
             ref="uploadRef"
+            v-model:file-list="fileList"
             :auto-upload="false"
-            :limit="1"
+            multiple
+            :limit="10"
             accept=".csv,.xlsx,.xls"
             :on-change="onFileChange"
-            :on-remove="onFileRemove"
+            :on-exceed="onExceed"
           >
             <el-button type="primary">选择文件</el-button>
             <template #tip>
               <div class="el-upload__tip">
-                支持 .csv / .xlsx / .xls，单个文件最大 50MB，不超过 10 万行 / 100 列
+                支持 .csv / .xlsx / .xls，单个文件最大 50MB，不超过 10 万行 / 100 列；可批量选择，最多 10 个
               </div>
             </template>
           </el-upload>
         </el-form-item>
-        <el-form-item label="名称">
-          <el-input v-model="uploadForm.name" placeholder="留空则使用文件名" />
+        <el-form-item v-if="fileList.length === 1" label="名称">
+          <el-input v-model="uploadName" placeholder="留空则使用文件名" />
+        </el-form-item>
+        <el-form-item v-else-if="fileList.length > 1" label=" ">
+          <span class="batch-hint">已选 {{ fileList.length }} 个文件，将分别以各自文件名上传</span>
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showUploadDialog = false">取消</el-button>
-        <el-button type="primary" :loading="uploading" @click="handleUpload">上传</el-button>
+        <el-button type="primary" :loading="uploading" @click="handleUpload">
+          上传{{ fileList.length > 1 ? `（${fileList.length} 个）` : '' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -116,7 +123,8 @@ const canUpload = computed(() => {
 
 const showUploadDialog = ref(false)
 const uploading = ref(false)
-const uploadForm = ref({ name: '', file: null as File | null })
+const uploadName = ref('')
+const fileList = ref<any[]>([])
 const uploadRef = ref()
 // 活跃的 WebSocket 连接：datasetId → WebSocket（组件卸载时统一关闭）
 const sockets = new Map<string, WebSocket>()
@@ -149,40 +157,82 @@ function onFileChange(file: any) {
   // 本地秒拒，避免上传一半才被服务端 413 拒绝
   const MAX_FILE_SIZE = 50 * 1024 * 1024
   if (file.size > MAX_FILE_SIZE) {
-    ElMessage.error('文件超过 50MB 上限')
-    uploadRef.value?.clearFiles()
-    return
+    ElMessage.error(`${file.name} 超过 50MB 上限，已忽略`)
+    // 过滤掉超限文件（v-model:file-list 受控，直接改数组即可）
+    fileList.value = fileList.value.filter((f: any) => f.uid !== file.uid)
   }
-  uploadForm.value.file = file.raw
 }
 
-function onFileRemove() {
-  uploadForm.value.file = null
+function onExceed() {
+  ElMessage.warning('一次最多上传 10 个文件')
 }
 
 async function handleUpload() {
-  if (!uploadForm.value.file) {
+  if (fileList.value.length === 0) {
     ElMessage.warning('请选择文件')
     return
   }
+  // 拷贝当前列表，避免上传过程中 fileList 被清空影响循环
+  const files = [...fileList.value]
   uploading.value = true
+
+  let successCount = 0
+  let asyncCount = 0
+  const failures: string[] = []
+
   try {
-    const fd = new FormData()
-    fd.append('file', uploadForm.value.file)
-    if (uploadForm.value.name) fd.append('name', uploadForm.value.name)
-    const res = await datasetApi.upload(fd)
-
-    showUploadDialog.value = false
-    uploadForm.value = { name: '', file: null }
-    uploadRef.value?.clearFiles()
-
-    if (res.data.status === 'completed') {
-      ElMessage.success('上传并处理成功')
-    } else {
-      ElMessage.success('上传成功，正在处理中...')
-      subscribeProgress(res.data.id)
+    // 逐个上传：复用现有单文件接口 /api/datasets/，后端零改动。
+    // 不并发（用 for await 串行）：避免浏览器同域 6 连接限制 + 后端
+    // 大文件 Celery worker（concurrency=2）被打满。一个失败不影响其余。
+    for (const f of files) {
+      const fd = new FormData()
+      fd.append('file', f.raw)
+      // 只在单文件时支持自定义名称（多文件时各自用文件名）
+      if (files.length === 1 && uploadName.value) {
+        fd.append('name', uploadName.value)
+      }
+      try {
+        const res = await datasetApi.upload(fd)
+        successCount++
+        if (res.data.status === 'completed') {
+          // 同步处理完成，无需订阅进度
+        } else {
+          asyncCount++
+          subscribeProgress(res.data.id)
+        }
+      } catch (e: any) {
+        // 单个失败不中断：413/409/500 等，收集错误信息最后汇总
+        const msg = e?.response?.data?.error || '上传失败'
+        failures.push(`${f.name}: ${msg}`)
+      }
     }
-    fetchList()
+
+    // 汇总提示
+    if (successCount === 1 && failures.length === 0) {
+      // 单文件成功：保持原有提示语义
+      if (asyncCount === 0) ElMessage.success('上传并处理成功')
+      else ElMessage.success('上传成功，正在处理中...')
+    } else if (successCount > 0 && failures.length === 0) {
+      // 批量全部成功
+      ElMessage.success(`成功上传 ${successCount} 个文件${asyncCount ? '，正在处理中...' : ''}`)
+    } else if (successCount > 0 && failures.length > 0) {
+      // 批量部分成功
+      ElMessage.warning(
+        `${successCount} 个成功，${failures.length} 个失败：` + failures.join('；')
+      )
+    } else {
+      // 全失败
+      ElMessage.error('全部失败：' + failures.join('；'))
+    }
+
+    // 关闭弹窗 + 清理（只有全部失败时不关弹窗，让用户改了重试）
+    if (successCount > 0) {
+      showUploadDialog.value = false
+      fileList.value = []
+      uploadName.value = ''
+      uploadRef.value?.clearFiles()
+      fetchList()
+    }
   } finally {
     uploading.value = false
   }
@@ -270,5 +320,9 @@ function formatTime(t: string) {
   font-size: 12px;
   color: var(--el-text-color-secondary);
   line-height: 1.2;
+}
+.batch-hint {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
 }
 </style>
