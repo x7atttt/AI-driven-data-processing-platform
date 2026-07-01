@@ -120,6 +120,9 @@ class DatasetViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         dataset = self.get_object()
+        # 失效 schema 缓存（数据集要删了，缓存的 schema 摘要没意义了）
+        from apps.datasets.services.analyzer import invalidate_schema_cache
+        invalidate_schema_cache(dataset.id)
         dataset.file.delete(save=False)
         dataset.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

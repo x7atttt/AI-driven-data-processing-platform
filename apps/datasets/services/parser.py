@@ -43,6 +43,12 @@ def delete_dataset_completely(dataset: Dataset) -> None:
     超限等不可恢复的错误用此函数清理，避免留下 failed 状态的垃圾记录
     和 media 目录的残留文件。同步路径和异步路径共用。
     """
+    # 失效 schema 缓存（数据集要删了）
+    from apps.datasets.services.analyzer import invalidate_schema_cache
+    try:
+        invalidate_schema_cache(dataset.id)
+    except Exception:
+        pass  # 缓存清理失败不阻塞删除主流程
     # 先删文件（file.delete(save=False) 不触发 ORM save，避免循环）
     try:
         dataset.file.delete(save=False)

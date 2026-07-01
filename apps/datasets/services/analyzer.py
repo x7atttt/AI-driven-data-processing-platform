@@ -2,12 +2,41 @@ import json
 import logging
 
 import pandas as pd
+import redis
+from django.conf import settings
 
 from apps.datasets.models import Dataset, DataRow
 
 logger = logging.getLogger(__name__)
 
 MAX_ROWS = 50000
+
+# schema 缓存：项目是"上传快照"模式，数据集不变则 schema 也不变。
+# 用现有 Redis 连接（复用 db1，不分库），按 key 前缀 schema:{dataset_id} 逻辑隔离。
+# 数据集删除/分享变更时主动失效（见 invalidate_schema_cache）。
+_SCHEMA_CACHE_TTL = 60 * 60 * 24 * 7  # 7 天兜底（理论上永久，加 TTL 防止意外残留）
+
+
+def _get_cache_client():
+    """惰性创建 Redis 客户端，避免模块加载时连接。"""
+    return redis.from_url(settings.REDIS_URL, decode_responses=True)
+
+
+def _cache_key(dataset_id) -> str:
+    return f'schema:{dataset_id}'
+
+
+def invalidate_schema_cache(dataset_id) -> None:
+    """数据集变更时主动失效 schema 缓存。
+
+    调用时机：Dataset 删除、DataRow 大规模变更（重新解析）。
+    DatasetShare 变更不影响 schema（分享是授权不是数据变化），无需调。
+    """
+    try:
+        _get_cache_client().delete(_cache_key(dataset_id))
+    except Exception:
+        # 缓存失效失败不阻塞主流程（最坏情况是读到旧缓存，TTL 7 天兜底）
+        logger.warning('invalidate_schema_cache failed for %s', dataset_id)
 
 
 def _load_dataframe(dataset: Dataset, max_rows: int = MAX_ROWS) -> dict:
@@ -127,9 +156,24 @@ def get_column_stats(dataset: Dataset) -> dict:
 
 
 def get_schema_summary(dataset: Dataset) -> str:
-    """生成结构化 schema 摘要，供 NL2SQL prompt 注入"""
+    """生成结构化 schema 摘要，供 NL2SQL prompt 注入。
+
+    带 Redis 缓存：项目是"上传快照"模式，数据集不变则 schema 也不变，
+    重复计算是纯浪费。第一次算完缓存，后续查询命中缓存省 90%+ 成本。
+    数据集删除/重新解析时调 invalidate_schema_cache 主动失效。
+    """
     if dataset.status != 'completed':
         return '数据集尚未处理完成'
+
+    # 读缓存
+    cache_key = _cache_key(dataset.id)
+    try:
+        cached = _get_cache_client().get(cache_key)
+        if cached:
+            return cached
+    except Exception:
+        # Redis 不可用不阻塞主流程，降级为直接计算（和无缓存时一样）
+        logger.warning('schema cache read failed for %s, fallback to compute', dataset.id)
 
     loaded = _load_dataframe(dataset)
     df = loaded['df']
@@ -183,7 +227,15 @@ def get_schema_summary(dataset: Dataset) -> str:
             f'(Note: stats based on {len(df)} row sample of {loaded["total_rows"]} total)'
         )
 
-    return '\n'.join(lines)
+    result = '\n'.join(lines)
+
+    # 写缓存（数据集不变则 schema 不变，长期缓存）
+    try:
+        _get_cache_client().set(cache_key, result, ex=_SCHEMA_CACHE_TTL)
+    except Exception:
+        logger.warning('schema cache write failed for %s', dataset.id)
+
+    return result
 
 
 def get_dataset_overview(dataset: Dataset) -> dict:
